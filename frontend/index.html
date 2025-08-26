@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Rev — Revolt Motors Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #000;
+      color: #e5ffe5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .neon { text-shadow: 0 0 5px #0c693e, 0 0 10px #00ff88; }
+    .card {
+      background: rgba(0, 20, 0, 0.9);
+      border: 1px solid #5f98e2;
+      box-shadow: 0 0 15px rgba(0,255,136,0.2);
+    }
+    .robot-btn {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      border-radius: 50%;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    .robot-btn:hover { transform: scale(1.08); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- ✅ Fullscreen Welcome Page with Bike -->
+<div id="welcomePage" class="relative flex-1 flex items-center justify-center">
+  <!-- Fullscreen Bike Image -->
+  <img src="bike.jpg"
+       alt="Revolt Bike"
+       class="absolute inset-0 w-full h-full object-cover opacity-20" />
+
+  <!-- Overlay Text -->
+  <div class="relative z-10 text-center px-6">
+    <h1 class="text-5xl md:text-6xl font-bold text-green-400 neon">
+      Welcome to Revolt Motors
+    </h1>
+    <p class="mt-4 text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
+      Experience the future of riding with India's first AI-powered electric motorcycle.
+      Meet <span class="font-semibold text-green-400">Rev</span>, your personal Revolt assistant.
+    </p>
+  </div>
+</div>
+
+
+  <!-- Launcher Robot -->
+  <div id="robotLauncher" class="robot-btn">
+    <video autoplay loop muted playsinline class="w-full h-full object-cover rounded-full">
+      <source src="Robot says hello.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+
+<!-- Mode select -->
+<div id="modeSelect" class="hidden fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+  <div class="p-8 rounded-2xl card space-y-6 text-center w-[90%] max-w-md">
+    <h1 class="text-2xl font-bold neon">How would you like to connect?</h1>
+    <div class="flex gap-6 justify-center">
+      <button id="chooseVoice" class="px-6 py-3 rounded-xl bg-green-700 hover:bg-green-600 transition text-white">🎤 Voice Chat</button>
+      <button id="chooseText" class="px-6 py-3 rounded-xl bg-green-700 hover:bg-green-600 transition text-white">💬 Text Chat</button>
+    </div>
+    <button id="closeMode" class="text-sm text-gray-400 hover:text-white">Cancel</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden flex-1 flex flex-col">
+  <header class="bg-black/70 shadow p-4 flex justify-between items-center card">
+    <button id="backBtn" class="text-green-400 hover:text-white">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    <h1 class="text-xl font-bold neon">Rev — Revolt Assistant</h1>
+    <span id="wsStatus" class="text-sm px-2 py-1 rounded bg-green-800 text-green-200">WS: …</span>
+  </header>
+
+  <main class="flex-1 grid gap-4 p-4 max-w-5xl mx-auto w-full md:grid-cols-[1fr_300px]">
+    <!-- Chat -->
+    <section id="chatSection" class="card rounded-2xl p-4 flex flex-col hidden">
+      <div id="chat" class="flex-1 overflow-auto space-y-3 pr-1"></div>
+      <form id="chatForm" class="mt-4 flex gap-2">
+        <input id="chatInput" class="flex-1 rounded-xl border px-3 py-2 bg-black/40 text-white"
+               placeholder="Type and hit Enter…" autocomplete="off" />
+        <button class="rounded-xl bg-green-700 text-white px-4 py-2 hover:bg-green-600 transition">Send</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<!-- Voice Chat Section (Fullscreen) -->
+<aside id="voiceSection" class="hidden fixed inset-0 flex flex-col items-center justify-center bg-black z-50">
+  <!-- Back button -->
+  <button id="voiceBackBtn" class="absolute top-6 left-6 text-green-400 hover:text-white">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Robot Image + Animation -->
+<div class="flex flex-col items-center mb-12">
+  <img src="robot says hi.png" alt="Rev Robot" class="w-32 h-32 mb-4 animate-bounce drop-shadow-[0_0_20px_#00ff88]" />
+  <h1 class="text-3xl font-bold text-white">Talk to Rev</h1>
+</div>
+
+
+  <!-- Mic Button -->
+  <button id="micBtn" class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center hover:bg-blue-500 transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3z" />
+      <path d="M19 11a7 7 0 01-14 0H3a9 9 0 0018 0h-2z" />
+    </svg>
+  </button>
+
+  <span id="recStatus" class="mt-6 text-green-400"></span>
+
+  <!-- Language Selector -->
+  <div class="absolute bottom-8">
+    <select id="langSelect" class="px-3 py-2 rounded-xl bg-black/60 text-white border">
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+      <option value="hi-IN">Hindi</option>
+      <option value="ta-IN">Tamil</option>
+      <option value="te-IN">Telugu</option>
+      <option value="kn-IN">Kannada</option>
+      <option value="bn-IN">Bengali</option>
+      <option value="mr-IN">Marathi</option>
+      <option value="es-ES">Spanish</option>
+      <option value="fr-FR">French</option>
+      <option value="de-DE">German</option>
+      <option value="it-IT">Italian</option>
+      <option value="ar-SA">Arabic</option>
+      <option value="ja-JP">Japanese</option>
+      <option value="zh-CN">Chinese (Mandarin)</option>
+    </select>
+  </div>
+</aside>
+
+<script>
+  const robotLauncher = document.getElementById("robotLauncher");
+  const modeSelect = document.getElementById("modeSelect");
+  const closeMode = document.getElementById("closeMode");
+  const app = document.getElementById("app");
+  const chatSection = document.getElementById("chatSection");
+  const voiceSection = document.getElementById("voiceSection");
+  const backBtn = document.getElementById("backBtn");
+  const voiceBackBtn = document.getElementById("voiceBackBtn");
+  const micBtn = document.getElementById("micBtn");
+
+  const chatEl = document.getElementById("chat");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const wsStatus = document.getElementById("wsStatus");
+  const recStatus = document.getElementById("recStatus");
+  const langSelect = document.getElementById("langSelect");
+
+  let ws;
+  let welcomeAdded = false;
+  let recognition;
+  let listening = false;
+  let currentMode = null;   // <-- NEW: keep track of mode
+
+  function addMsg(role, text) {
+    if (currentMode !== "text") return; // only show messages in text mode
+    const wrap = document.createElement("div");
+    wrap.className = `flex ${role === "user" ? "justify-end" : "justify-start"}`;
+    const bubble = document.createElement("div");
+    bubble.className =
+      role === "user"
+        ? "max-w-[80%] rounded-2xl px-3 py-2 bg-green-700 text-white"
+        : "max-w-[80%] rounded-2xl px-3 py-2 bg-black/60 text-green-200";
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    chatEl.appendChild(wrap);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  // --- WebSocket ---
+  function connectWS() {
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/stream`);
+    ws.onopen = () => { wsStatus.textContent = "WS: open"; };
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "transcript") {
+        if (currentMode === "voice") {
+          // ✅ Voice mode → only show in recStatus + speak
+          recStatus.textContent = "Assistant: " + msg.text;
+          speak(msg.text);
+        } else if (currentMode === "text") {
+          // ✅ Text mode → only show in chat
+          addMsg("assistant", msg.text);
+          speak(msg.text); // optional
+        }
+      }
+    };
+    ws.onclose = () => {
+      wsStatus.textContent = "WS: closed";
+      setTimeout(connectWS, 2000);
+    };
+  }
+  connectWS();
+
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (currentMode !== "text") return; // only send in text mode
+    const text = chatInput.value.trim();
+    if (!text || ws.readyState !== 1) return;
+    addMsg("user", text);
+    ws.send(JSON.stringify({ type: "text", text }));
+    chatInput.value = "";
+  });
+
+  // --- Speech Synthesis ---
+  function speak(text) {
+    if (!("speechSynthesis" in window)) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = langSelect.value;
+    speechSynthesis.cancel();
+    setTimeout(() => speechSynthesis.speak(utter), 50); // safer
+  }
+
+  // --- Speech Recognition ---
+  function initRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { recStatus.textContent = "Speech recognition not supported."; return; }
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = langSelect.value;
+
+    recognition.onstart = () => { recStatus.textContent = "🎙️ Listening…"; };
+    recognition.onend = () => { recStatus.textContent = "Idle"; listening = false; };
+    recognition.onresult = (e) => {
+      if (currentMode !== "voice") return; // only capture in voice mode
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript.trim();
+        if (e.results[i].isFinal) {
+          recStatus.textContent = "You: " + transcript;
+          ws.send(JSON.stringify({ type: "text", text: transcript }));
+        } else {
+          recStatus.textContent = "🎙️ " + transcript;
+        }
+      }
+    };
+  }
+
+  micBtn.onclick = () => {
+    if (!recognition) initRecognition();
+    if (!listening) {
+      recognition.lang = langSelect.value;
+      recognition.start();
+      listening = true;
+      recStatus.textContent = "🎙️ Listening…";
+      micBtn.classList.replace("bg-blue-600", "bg-red-600");
+    } else {
+      recognition.stop();
+      listening = false;
+      recStatus.textContent = "Idle";
+      micBtn.classList.replace("bg-red-600", "bg-blue-600");
+    }
+  };
+
+  // --- Launcher Logic ---
+  robotLauncher.onclick = () => modeSelect.classList.remove("hidden");
+  closeMode.onclick = () => modeSelect.classList.add("hidden");
+
+  document.getElementById("chooseVoice").onclick = () => {
+    modeSelect.classList.add("hidden");
+    voiceSection.classList.remove("hidden");
+    currentMode = "voice";   // set mode
+  };
+
+  document.getElementById("chooseText").onclick = () => {
+    modeSelect.classList.add("hidden"); 
+    app.classList.remove("hidden");
+    chatSection.classList.remove("hidden"); 
+    voiceSection.classList.add("hidden");
+    currentMode = "text";   // set mode
+
+    if (!welcomeAdded) {
+      addMsg("assistant",
+        "👋 Welcome to Revolt Motors!\n\n" +
+        "I am Rev — your smart assistant to help you explore the future of electric mobility. 🚲⚡\n\n" +
+        "With me, you can:\n" +
+        "• Book or manage your Revolt electric bike\n" +
+        "• Explore upcoming test rides\n" +
+        "• Track your service tickets and updates\n" +
+        "• Discover charging and battery swap stations near you\n" +
+        "• Get exclusive Revolt offers and updates\n\n" +
+        "Let's begin your electrifying journey with Revolt Motors! 🚀"
+      );
+      welcomeAdded = true;
+    }
+  };
+
+  backBtn.onclick = () => { app.classList.add("hidden"); modeSelect.classList.remove("hidden"); currentMode = null; };
+  voiceBackBtn.onclick = () => { voiceSection.classList.add("hidden"); modeSelect.classList.remove("hidden"); currentMode = null; };
+</script>
+
+</body>
+</html>
